@@ -1,0 +1,94 @@
+[Operadores lógicos]
+1: & → ∧
+1: | → ∨
+1: -- → ¬
+1: <-> → ↔
+1: -> → →
+1: |- → ⊢
+1: |/- → ⊬
+1: |= → ⊨
+1: |/= → ⊭
+1: === → ≡
+1: \perp → ⊥
+1: <=> → ⇔
+1: => → ⇒
+1: <=  → ⇐
+1: \forall → ∀
+1: \exists → ∃
+1: \nexists → ∄
+
+[Operadores cuánticos]
+0: << → ⟨
+0: >> → ⟩
+0: ++ → ⊕
+0: xx → ⊗
+
+[Alfabeto griego]
+0: \alpha → α
+0: \beta → β
+0: \gamma → γ
+0: \delta → δ
+0: \epsilon → ε
+0: \zeta → ζ
+0: \eta → η
+0: \theta → θ
+0: \iota → ι
+0: \kappa → κ
+0: \lambda → λ
+0: \mu → μ
+0: \nu → ν
+0: \xi → ξ
+0: \pi → π
+0: \rho → ρ
+0: \sigma → σ
+0: \tau → τ
+0: \upsilon → υ
+0: \phi → φ
+0: \chi → χ
+0: \psi → ψ
+0: \omega → ω
+0: \Gamma → Γ
+0: \Delta → Δ
+0: \Theta → Θ
+0: \Lambda → Λ
+0: \Xi → Ξ
+0: \Pi → Π
+0: \Sigma → Σ
+0: \Phi → Φ
+0: \Psi → Ψ
+0: \Omega → Ω
+
+[Operadores de cálculo]
+0: \sqrt → √
+0: \sum → ∑
+0: \prod → ∏
+0: \int → ∫
+0: \oint → ∮
+0: \nabla → ∇
+0: \partial → ∂
+0: \infty → ∞
+
+[Igualdades]
+0: ~~ → ≈
+0: != → ≠
+0: == → ≟
+0: <=  → ≤
+0: >= → ≥
+
+[Operadores de conjuntos]
+0: \in → ∈
+0: \notin → ∉
+0: \emptyset → ∅
+0: \cup → ∪
+0: \cap → ∩
+0: \subset → ⊂
+0: \subseteq → ⊆
+0: \supset → ⊃
+0: \supseteq → ⊇
+
+[Conjuntos numéricos]
+0: NN → ℕ
+0: ZZ → ℤ
+0: QQ → ℚ
+0: RR → ℝ
+0: CC → ℂ
