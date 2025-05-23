@@ -26,10 +26,9 @@ return
 
 ActualizarScriptExe(remote_version) {
     ; Cambia esta URL por la de tu ejecutable en GitHub Releases
-    remoteExeURL := "https://github.com/Astarmo/TRyS/releases/tag/v" remote_version "/Notacion.Matematica.exe"
+    remoteExeURL := "https://github.com/Astarmo/TRyS/releases/download/v" remote_version "/Notacion.Matematica.exe"
     localExePath := A_ScriptFullPath
     tempExePath := A_ScriptDir "\update_temp.exe"
-
     try {
         http := ComObject("WinHttp.WinHttpRequest.5.1")
         http.Open("GET", remoteExeURL)
