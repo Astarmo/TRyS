@@ -24,7 +24,7 @@ return
 
 ActualizarScriptExe() {
     ; Cambia esta URL por la de tu ejecutable en GitHub Releases
-    remoteExeURL := "https://github.com/Astarmo/TRyS/releases/download/v1.0.0/Notación%20Matemática.exe"
+    remoteExeURL := "https://github.com/Astarmo/TRyS/releases/download/v1.0.0/Notacion.Matematica.exe"
     localExePath := A_ScriptFullPath
     tempExePath := A_ScriptDir "\update_temp.exe"
 
@@ -53,7 +53,7 @@ ActualizarScriptExe() {
 
 CheckForUpdate() {
     localStatePath := A_ScriptDir "\version_state.txt"
-    remoteStateURL := "https://raw.githubusercontent.com/Astarmo/TRyS/main/Notación%20Matemática/version_state.txt"
+    remoteStateURL := "https://raw.githubusercontent.com/Astarmo/TRyS/main/Notacion.Matematica/version_state.txt"
 
     ; Leer estado local
     local_version := ""
