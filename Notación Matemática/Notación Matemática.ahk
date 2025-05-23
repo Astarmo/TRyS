@@ -2,11 +2,21 @@
 
 #SingleInstance Force
 
+versionNoteURL := "https://raw.githubusercontent.com/Astarmo/TRyS/main/Notación%20Matemática/Nota%20de%20última%20versión.txt"
+versionStatePath := A_ScriptDir "\version_state.txt"
+
+remoteScriptURL := "https://raw.githubusercontent.com/Astarmo/TRyS/main/Notación%20Matemática/Notación%20Matemática.ahk"
+localScriptPath := A_ScriptFullPath
+tempScriptPath := A_ScriptDir "\update_temp.ahk"
+
+
 filePath := A_ScriptDir "\atajos.txt"
 if !FileExist(filePath) {
     MsgBox "File not found: " filePath
     return
 }
+
+CheckVersionAndPrompt()
 
 ; Configura el menú de la bandeja
 A_TrayMenu.Delete()
@@ -15,8 +25,82 @@ A_TrayMenu.Add("Salir", (*) => ExitApp())
 
 if (A_Args.Length = 0 || A_Args[1] != "auto")
     make_gui(filePath) ; Si no se pasa el argumento "auto", muestra el menú 
+else {
+    ActualizarScript()
+}
 enableHotstringsFromFile(filePath)
 
+CheckVersionAndPrompt() {
+    global versionNoteURL, versionStatePath
+    tempNotePath := A_ScriptDir "\temp_version_note.txt"
+    try {
+        Download(versionNoteURL, tempNotePath)
+        if !FileExist(tempNotePath)
+            return
+        remoteNote := FileRead(tempNotePath, "UTF-8-RAW")
+        FileDelete(tempNotePath)
+    } catch {
+        return
+    }
+    ; Leer estado local
+    lastVersion := ""
+    lastDecision := ""
+    if FileExist(versionStatePath) {
+        state := FileRead(versionStatePath, "UTF-8-RAW")
+        arr := StrSplit(state, "`n")
+        lastVersion := arr.Length >= 1 ? arr[1] : ""
+        lastDecision := arr.Length >= 2 ? arr[2] : ""
+    }
+    ; Extraer número de versión de la primera línea del archivo remoto
+    remoteVersion := ""
+    for line in StrSplit(remoteNote, "`n", "`r") {
+        if Trim(line) {
+            remoteVersion := Trim(line)
+            break
+        }
+    }
+    ; Si la versión es nueva o nunca se mostró
+    if (remoteVersion != lastVersion || lastDecision = "") {
+        Msg := remoteNote "`n`n¿Deseas actualizar ahora?"
+        resp := MsgBox(Msg, "Nueva versión disponible", "YesNoCancel Iconi")
+        ; Yes = Actualizar ahora, No = No actualizar, Cancel = Más tarde
+        if resp = "Yes" {
+            FileDelete(versionStatePath)
+            ActualizarScript()
+        } else if resp = "No" {
+            FileDelete(versionStatePath)
+            FileAppend(remoteVersion "`nNo", versionStatePath, "UTF-8-RAW")
+        } else { ; Cancel
+            FileDelete(versionStatePath)
+            FileAppend(remoteVersion "`nLater", versionStatePath, "UTF-8-RAW")
+        }
+    } else if (lastDecision = "Later") {
+        Msg := remoteNote "`n`n¿Deseas actualizar ahora?"
+        resp := MsgBox(Msg, "Nueva versión disponible", "YesNoCancel Iconi")
+        if resp = "Yes" {
+            FileDelete(versionStatePath)
+            ActualizarScript()
+        } else if resp = "No" {
+            FileDelete(versionStatePath)
+            FileAppend(remoteVersion "`nNo", versionStatePath, "UTF-8-RAW")
+        } else { ; Cancel
+            ; Mantener el estado para preguntar la próxima vez
+        }
+    }
+}
+
+ActualizarScript() {
+    global remoteScriptURL, localScriptPath, tempScriptPath
+    if Download(remoteScriptURL, tempScriptPath) != "" {
+        if FileRead(tempScriptPath, "UTF-8-RAW") != FileRead(localScriptPath, "UTF-8-RAW") {
+            FileMove(tempScriptPath, localScriptPath, true)
+            Run localScriptPath
+            ExitApp
+        } else {
+            FileDelete(tempScriptPath)
+        }
+    }
+}
 
 enableHotstringsFromFile(filePath) {
     if !FileExist(filePath) {
@@ -47,7 +131,9 @@ enableHotstringsFromFile(filePath) {
 }
 
 make_gui(filePath) {
-    height := 600
+    CheckVersionAndPrompt()
+
+    height := 400
 
     goo := Gui("+Resize", "h" height)
     goo.BackColor := 0xE0E0E0
