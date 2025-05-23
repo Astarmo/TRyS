@@ -22,9 +22,9 @@ enableHotstringsFromFile(hotstringsFilePath)
 SetFileHidden(versionStateFilePath)
 return
 
-ActualizarScriptExe() {
+ActualizarScriptExe(remote_version) {
     ; Cambia esta URL por la de tu ejecutable en GitHub Releases
-    remoteExeURL := "https://github.com/Astarmo/TRyS/releases/download/v1.0.0/Notacion.Matematica.exe"
+    remoteExeURL := "https://github.com/Astarmo/TRyS/releases/tag/v" remote_version "/Notacion.Matematica.exe"
     localExePath := A_ScriptFullPath
     tempExePath := A_ScriptDir "\update_temp.exe"
 
@@ -53,8 +53,7 @@ ActualizarScriptExe() {
 
 CheckForUpdate() {
     localStatePath := A_ScriptDir "\version_state.txt"
-    remoteStateURL := "https://raw.githubusercontent.com/Astarmo/TRyS/main/Notacion.Matematica/version_state.txt"
-
+    remoteStateURL := "https://github.com/Astarmo/TRyS/blob/main/Notaci%C3%B3n%20Matem%C3%A1tica/version_state.txt"
     ; Leer estado local
     local_version := ""
     remote_version_local := ""
@@ -101,7 +100,7 @@ CheckForUpdate() {
     resp := MsgBox("Hay una nueva versión disponible (" remote_version "). ¿Deseas actualizar ahora?", "Actualización disponible", "YesNoCancel")
     if resp = "Yes" {
         ; Aquí deberías llamar a tu función de actualización, por ejemplo:
-        ActualizarScriptExe()
+        ActualizarScriptExe(remote_version)
         ; Y luego actualizar el archivo local:
         newState := "local_version: " remote_version "`nremote_version: " remote_version "`nuser_decision: yes"
         FileDelete(localStatePath)
