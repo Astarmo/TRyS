@@ -2,6 +2,21 @@
 
 #SingleInstance Force
 
+if (A_ScriptName = "Notacion.Matematica.new.exe") {
+    while ProcessExist("Notacion.Matematica.exe") {
+        Sleep 500
+    }
+    FileMove(A_ScriptDir "\Notacion.Matematica.new.exe", A_ScriptDir "\Notacion.Matematica.exe", 1)
+    Run A_ScriptDir "\Notacion.Matematica.exe"
+    ExitApp
+}
+else if FileExist(A_ScriptDir "\Notacion.Matematica.new.exe") {
+    while ProcessExist("Notacion.Matematica.new.exe") {
+        Sleep 500
+    }
+    FileDelete(A_ScriptDir "\Notacion.Matematica.new.exe")
+}
+
 versionStateFilePath := A_ScriptDir "\version_state.txt"
 
 hotstringsFilePath := A_ScriptDir "\atajos.txt"
@@ -25,32 +40,19 @@ SetFileHidden(versionStateFilePath)
 return
 
 ActualizarScriptExe(remote_version) {
-    ; Cambia esta URL por la de tu ejecutable en GitHub Releases
     remoteExeURL := "https://github.com/Astarmo/TRyS/releases/download/v" remote_version "/Notacion.Matematica.exe"
-    localExePath := A_ScriptFullPath
-    tempExePath := A_ScriptDir "\update_temp.exe"
+    newExePath := A_ScriptDir "\Notacion.Matematica.new.exe"
+
     try {
-        http := ComObject("WinHttp.WinHttpRequest.5.1")
-        http.Open("GET", remoteExeURL)
-        http.Send()
-        if (http.Status != 200) {
-            MsgBox "No se pudo descargar la última versión del ejecutable."
-            return
-        }
-        FileDelete(tempExePath)
-        ; Guardar como binario
-        FileOpen(tempExePath, "w").RawWrite(http.ResponseBody, http.ResponseBody.Length)
-
-        ; Reemplazar el ejecutable actual por el nuevo
-        FileMove(tempExePath, localExePath, true)
-
-        MsgBox "¡Programa actualizado! Se reiniciará ahora."
-        Run localExePath
+        Download(remoteExeURL, newExePath)
+        Run(newExePath, , "Hide")
         ExitApp
     } catch {
-        MsgBox "Ocurrió un error durante la actualización."
+        return false
     }
+    return true
 }
+
 
 CheckForUpdate() {
     localStatePath := A_ScriptDir "\version_state.txt"
@@ -113,12 +115,13 @@ CheckForUpdate() {
     resp := MsgBox("Hay una nueva versión disponible (" remote_version "). ¿Deseas actualizar ahora?", "Actualización disponible", "YesNoCancel")
     if resp = "Yes" {
         ; Aquí deberías llamar a tu función de actualización, por ejemplo:
-        ActualizarScriptExe(remote_version)
+        if ActualizarScriptExe(remote_version) {
         ; Y luego actualizar el archivo local:
-        newState := "local_version: " remote_version "`nremote_version: " remote_version "`nuser_decision: yes"
-        FileDelete(localStatePath)
-        FileAppend(newState, localStatePath, "UTF-8-RAW")
-        SetFileHidden(localStatePath)
+            newState := "local_version: " remote_version "`nremote_version: " remote_version "`nuser_decision: yes"
+            FileDelete(localStatePath)
+            FileAppend(newState, localStatePath, "UTF-8-RAW")
+            SetFileHidden(localStatePath)
+        }
     } else if resp = "Cancel" {
         ; Guardar la decisión de posponer la actualización para esta versión
         newState := "local_version: " local_version "`nremote_version: " remote_version "`nuser_decision: later"
