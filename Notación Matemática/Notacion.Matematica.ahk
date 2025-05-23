@@ -10,6 +10,8 @@ if !FileExist(hotstringsFilePath) {
     return
 }
 
+; Verifica si hay una nueva versión
+CheckForUpdate()
 
 ; Configura el menú de la bandeja
 A_TrayMenu.Delete()
@@ -78,15 +80,24 @@ CheckForUpdate() {
         MsgBox "No se pudo comprobar la versión remota."
         return
     }
+
+    ; Guardar el estado remoto en un archivo temporal
+    ; Leer la versión remota
     remote_version := ""
-    for line in StrSplit(http.ResponseText, "`n", "`r") {
-        if InStr(line, "remote_version:") = 1 {
-            remote_version := Trim(StrSplit(line, ":")[2])
-            break
+    ; Extrae remote_version de la respuesta JSON/texto de GitHub
+    ; Busca la línea que contiene "remote_version:" en el array "rawLines"
+    match := ""
+    if RegExMatch(http.ResponseText, '"rawLines":\[(.*?)\]', &m) {
+        rawLines := m[1]
+        ; Extrae cada línea entre comillas
+        for line in StrSplit(rawLines, '","') {
+            line := StrReplace(line, '"', "")
+            if InStr(line, "remote_version:") = 1 {
+                remote_version := Trim(StrSplit(line, ":")[2])
+                break
+            }
         }
     }
-
-    MsgBox "remote_version: " remote_version
 
 
     ; Si la versión remota es igual a la local, no hacer nada
