@@ -2,31 +2,138 @@
 
 #SingleInstance Force
 
-filePath := A_ScriptDir "\atajos.txt"
-if !FileExist(filePath) {
-    MsgBox "File not found: " filePath
+versionStateFilePath := A_ScriptDir "\version_state.txt"
+
+hotstringsFilePath := A_ScriptDir "\atajos.txt"
+if !FileExist(hotstringsFilePath) {
+    MsgBox "File not found: " hotstringsFilePath
     return
 }
 
 
 ; Configura el menú de la bandeja
 A_TrayMenu.Delete()
-A_TrayMenu.Add("Abrir Menú", (*) => make_gui(filePath))
+A_TrayMenu.Add("Abrir Menú", (*) => make_gui(hotstringsFilePath))
 A_TrayMenu.Add("Salir", (*) => ExitApp())
 
 if (A_Args.Length = 0 || A_Args[1] != "auto")
-    make_gui(filePath) ; Si no se pasa el argumento "auto", muestra el menú 
-enableHotstringsFromFile(filePath)
+    make_gui(hotstringsFilePath) ; Si no se pasa el argumento "auto", muestra el menú 
+enableHotstringsFromFile(hotstringsFilePath)
+SetFileHidden(versionStateFilePath)
 return
 
-enableHotstringsFromFile(filePath) {
-    if !FileExist(filePath) {
-        MsgBox "File not found: " filePath
+ActualizarScriptExe() {
+    ; Cambia esta URL por la de tu ejecutable en GitHub Releases
+    remoteExeURL := "https://github.com/Astarmo/TRyS/releases/download/v1.0.0/Notación%20Matemática.exe"
+    localExePath := A_ScriptFullPath
+    tempExePath := A_ScriptDir "\update_temp.exe"
+
+    try {
+        http := ComObject("WinHttp.WinHttpRequest.5.1")
+        http.Open("GET", remoteExeURL)
+        http.Send()
+        if (http.Status != 200) {
+            MsgBox "No se pudo descargar la última versión del ejecutable."
+            return
+        }
+        FileDelete(tempExePath)
+        ; Guardar como binario
+        FileOpen(tempExePath, "w").RawWrite(http.ResponseBody, http.ResponseBody.Length)
+
+        ; Reemplazar el ejecutable actual por el nuevo
+        FileMove(tempExePath, localExePath, true)
+
+        MsgBox "¡Programa actualizado! Se reiniciará ahora."
+        Run localExePath
+        ExitApp
+    } catch {
+        MsgBox "Ocurrió un error durante la actualización."
+    }
+}
+
+CheckForUpdate() {
+    localStatePath := A_ScriptDir "\version_state.txt"
+    remoteStateURL := "https://raw.githubusercontent.com/Astarmo/TRyS/main/Notación%20Matemática/version_state.txt"
+
+    ; Leer estado local
+    local_version := ""
+    remote_version_local := ""
+    user_decision := ""
+    if FileExist(localStatePath) {
+        lines := StrSplit(FileRead(localStatePath, "UTF-8-RAW"), "`n", "`r")
+        for line in lines {
+            if InStr(line, "local_version:") = 1
+                local_version := Trim(StrSplit(line, ":")[2])
+            else if InStr(line, "remote_version:") = 1
+                remote_version_local := Trim(StrSplit(line, ":")[2])
+            else if InStr(line, "user_decision:") = 1
+                user_decision := Trim(StrSplit(line, ":")[2])
+        }
+    }
+
+    ; Descargar estado remoto (solo en memoria, sin archivo temporal)
+    http := ComObject("WinHttp.WinHttpRequest.5.1")
+    http.Open("GET", remoteStateURL)
+    http.Send()
+    if (http.Status != 200) {
+        MsgBox "No se pudo comprobar la versión remota."
+        return
+    }
+    remote_version := ""
+    for line in StrSplit(http.ResponseText, "`n", "`r") {
+        if InStr(line, "remote_version:") = 1 {
+            remote_version := Trim(StrSplit(line, ":")[2])
+            break
+        }
+    }
+
+    ; Si la versión remota es igual a la local, no hacer nada
+    if (remote_version = local_version) {
         return
     }
 
-    file := FileOpen(filePath, "r", "UTF-8-RAW")
-    lines := StrSplit(FileRead(filePath, "UTF-8-RAW"), "`n", "`r")
+    ; Si la versión remota es igual a la última conocida y la decisión fue "no", no preguntar
+    if (remote_version = remote_version_local && user_decision = "no") {
+        return
+    }
+
+    ; Preguntar al usuario
+    resp := MsgBox("Hay una nueva versión disponible (" remote_version "). ¿Deseas actualizar ahora?", "Actualización disponible", "YesNoCancel")
+    if resp = "Yes" {
+        ; Aquí deberías llamar a tu función de actualización, por ejemplo:
+        ActualizarScriptExe()
+        ; Y luego actualizar el archivo local:
+        newState := "local_version: " remote_version "`nremote_version: " remote_version "`nuser_decision: yes"
+        FileDelete(localStatePath)
+        FileAppend(newState, localStatePath, "UTF-8-RAW")
+        SetFileHidden(localStatePath)
+    } else if resp = "Cancel" {
+        ; Guardar la decisión de posponer la actualización para esta versión
+        newState := "local_version: " local_version "`nremote_version: " remote_version "`nuser_decision: later"
+        FileDelete(localStatePath)
+        FileAppend(newState, localStatePath, "UTF-8-RAW")
+        SetFileHidden(localStatePath)
+    } else {
+        ; Guardar la decisión de no actualizar para esta versión
+        newState := "local_version: " local_version "`nremote_version: " remote_version "`nuser_decision: no"
+        FileDelete(localStatePath)
+        FileAppend(newState, localStatePath, "UTF-8-RAW")
+        SetFileHidden(localStatePath)
+    }
+}
+
+SetFileHidden(path) {
+    try RunWait 'attrib +h "' path '"', , "Hide"
+}
+
+enableHotstringsFromFile(hotstringsFilePath) {
+    if !FileExist(hotstringsFilePath) {
+        MsgBox "File not found: " hotstringsFilePath
+        return
+    }
+
+    file := FileOpen(hotstringsFilePath, "r", "UTF-8-RAW")
+    lines := StrSplit(FileRead(hotstringsFilePath, "UTF-8-RAW"), "`n", "`r")
     file.Close()
 
     for line in lines {
@@ -47,7 +154,7 @@ enableHotstringsFromFile(filePath) {
     }
 }
 
-make_gui(filePath) {
+make_gui(hotstringsFilePath) {
     
     height := 400
 
@@ -59,13 +166,13 @@ make_gui(filePath) {
     separacionEntreCheckboxes := 20
     goo.OnEvent("Size", GuiSize)
 
-    if !FileExist(filePath) {
-        MsgBox "File not found: " filePath
+    if !FileExist(hotstringsFilePath) {
+        MsgBox "File not found: " hotstringsFilePath
         return
     }
 
-    file := FileOpen(filePath, "r", "UTF-8-RAW")
-    fileText := StrReplace(FileRead(filePath, "UTF-8-RAW"), "`r")
+    file := FileOpen(hotstringsFilePath, "r", "UTF-8-RAW")
+    fileText := StrReplace(FileRead(hotstringsFilePath, "UTF-8-RAW"), "`r")
     file.Close()
     categories := StrSplit(fileText, "`n`n")
 
@@ -104,10 +211,10 @@ make_gui(filePath) {
             mainCb.Value &= subCb.Value
             checkBoxes[-1][2].Push(subCb)
 
-            clickSubCbEnv(checkBoxes, mainIndex, subIndex, activeHotstrings, filePath)
+            clickSubCbEnv(checkBoxes, mainIndex, subIndex, activeHotstrings, hotstringsFilePath)
         }
 
-        clickMainCbEnv(checkBoxes, mainIndex, activeHotstrings, filePath)
+        clickMainCbEnv(checkBoxes, mainIndex, activeHotstrings, hotstringsFilePath)
     }
 
     autoStartCb := goo.AddCheckbox(, "Iniciar automáticamente al iniciar el sistema")
@@ -205,7 +312,7 @@ make_gui(filePath) {
         guiObj.Move(, , right + separacionEntreColumnas, )
     }
 
-    save(checkBoxes, filePath) {
+    save(checkBoxes, hotstringsFilePath) {
         output := ""
         for main in checkBoxes {
             mainCb := main[1]
@@ -217,30 +324,30 @@ make_gui(filePath) {
         }
         if (StrLen(output) > 0)
             output := SubStr(output, 1, -2)
-        file := FileOpen(filePath, "w", "UTF-8-RAW")
-        FileDelete(filePath) ; Ensure the file is cleared before writing
-        FileAppend(output, filePath, "UTF-8-RAW")
+        file := FileOpen(hotstringsFilePath, "w", "UTF-8-RAW")
+        FileDelete(hotstringsFilePath) ; Ensure the file is cleared before writing
+        FileAppend(output, hotstringsFilePath, "UTF-8-RAW")
         file.Close()
 
-        enableHotstringsFromFile(filePath) ; Update the hotstrings after saving
+        enableHotstringsFromFile(hotstringsFilePath) ; Update the hotstrings after saving
     }
 
-    clickMainCbEnv(checkBoxes, mainIndex, activeHotstrings, filePath) {
+    clickMainCbEnv(checkBoxes, mainIndex, activeHotstrings, hotstringsFilePath) {
         mainCb := checkBoxes[mainIndex][1]
-        mainCb.OnEvent('Click', (*) => clickMainCb(checkBoxes, mainIndex, filePath))
+        mainCb.OnEvent('Click', (*) => clickMainCb(checkBoxes, mainIndex, hotstringsFilePath))
 
-        clickMainCb(checkBoxes, mainIndex, filePath) {
+        clickMainCb(checkBoxes, mainIndex, hotstringsFilePath) {
             for subIndex, subCb in checkBoxes[mainIndex][2] {
                 if (subCb.Value != checkBoxes[mainIndex][1].Value) {
                     subCb.Value := checkBoxes[mainIndex][1].Value ; Set the value of the subcheckbox
-                    clickSubCb(checkBoxes, mainIndex, subIndex, activeHotstrings, filePath, true) ; Call the clickSubCb function
+                    clickSubCb(checkBoxes, mainIndex, subIndex, activeHotstrings, hotstringsFilePath, true) ; Call the clickSubCb function
                 }
             }
-            save(checkBoxes, filePath) ; Save the state after clicking
+            save(checkBoxes, hotstringsFilePath) ; Save the state after clicking
         }
     }
     
-    clickSubCb(checkBoxes, mainIndex, subIndex, activeHotstrings, filePath, calledFromMain := false) {
+    clickSubCb(checkBoxes, mainIndex, subIndex, activeHotstrings, hotstringsFilePath, calledFromMain := false) {
         subCb := checkBoxes[mainIndex][2][subIndex]
         ; Get the hotstring from the sub-checkbox text (after the arrow)
         hotstring1 := Trim(StrSplit(subCb.Text, "→", , 2)[1])
@@ -273,12 +380,12 @@ make_gui(filePath) {
             }
 
             ; Save the state after clicking
-            save(checkBoxes, filePath)
+            save(checkBoxes, hotstringsFilePath)
         }
     }
 
-    clickSubCbEnv(checkBoxes, mainIndex, subIndex, activeHotstrings, filePath) {
+    clickSubCbEnv(checkBoxes, mainIndex, subIndex, activeHotstrings, hotstringsFilePath) {
         subCb := checkBoxes[mainIndex][2][subIndex]
-        subCb.OnEvent('Click', (*) => clickSubCb(checkBoxes, mainIndex, subIndex, activeHotstrings, filePath))
+        subCb.OnEvent('Click', (*) => clickSubCb(checkBoxes, mainIndex, subIndex, activeHotstrings, hotstringsFilePath))
     }
 }
