@@ -86,6 +86,9 @@ CheckForUpdate() {
         }
     }
 
+    MsgBox "remote_version: " remote_version
+
+
     ; Si la versión remota es igual a la local, no hacer nada
     if (remote_version = local_version) {
         return
