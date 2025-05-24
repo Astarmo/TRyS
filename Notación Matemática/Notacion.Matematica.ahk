@@ -45,7 +45,6 @@ ActualizarScriptExe(remote_version) {
 
     try {
         Download(remoteExeURL, newExePath)
-        SetFileHidden(newExePath)
         Run(newExePath, , "Hide")
     } catch {
         return false
