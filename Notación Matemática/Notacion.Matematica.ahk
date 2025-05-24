@@ -2,8 +2,6 @@
 
 #SingleInstance Force
 
-version := "1.0.0"
-
 if (A_ScriptName = "Notacion.Matematica.new.exe") {
     while ProcessExist("Notacion.Matematica.exe") {
         Sleep 500
@@ -28,7 +26,7 @@ if !FileExist(hotstringsFilePath) {
 }
 
 ; Verifica si hay una nueva versión
-CheckForUpdate(versionStateFilePath)
+CheckForUpdate()
 
 ; Configura el menú de la bandeja
 A_TrayMenu.Delete()
@@ -56,17 +54,19 @@ ActualizarScriptExe(remote_version) {
 }
 
 
-CheckForUpdate(localStatePath) {
-    global version
-    local_version := version
+CheckForUpdate() {
+    localStatePath := A_ScriptDir "\version_state.txt"
     remoteStateURL := "https://github.com/Astarmo/TRyS/blob/main/Notaci%C3%B3n%20Matem%C3%A1tica/version_state.txt"
     ; Leer estado local
+    local_version := ""
     remote_version_local := ""
-    user_decision := "later"
+    user_decision := ""
     if FileExist(localStatePath) {
         lines := StrSplit(FileRead(localStatePath, "UTF-8-RAW"), "`n", "`r")
         for line in lines {
-            if InStr(line, "remote_version:") = 1
+            if InStr(line, "local_version:") = 1
+                local_version := Trim(StrSplit(line, ":")[2])
+            else if InStr(line, "remote_version:") = 1
                 remote_version_local := Trim(StrSplit(line, ":")[2])
             else if InStr(line, "user_decision:") = 1
                 user_decision := Trim(StrSplit(line, ":")[2])
@@ -117,7 +117,7 @@ CheckForUpdate(localStatePath) {
         ; Aquí deberías llamar a tu función de actualización, por ejemplo:
         if ActualizarScriptExe(remote_version) {
         ; Y luego actualizar el archivo local:
-            newState := "remote_version: " remote_version "`nuser_decision: yes"
+            newState := "local_version: " remote_version "`nremote_version: " remote_version "`nuser_decision: yes"
             FileDelete(localStatePath)
             FileAppend(newState, localStatePath, "UTF-8-RAW")
             SetFileHidden(localStatePath)
@@ -125,13 +125,13 @@ CheckForUpdate(localStatePath) {
         }
     } else if resp = "Cancel" {
         ; Guardar la decisión de posponer la actualización para esta versión
-        newState := "remote_version: " remote_version "`nuser_decision: later"
+        newState := "local_version: " local_version "`nremote_version: " remote_version "`nuser_decision: later"
         FileDelete(localStatePath)
         FileAppend(newState, localStatePath, "UTF-8-RAW")
         SetFileHidden(localStatePath)
     } else {
         ; Guardar la decisión de no actualizar para esta versión
-        newState := "remote_version: " remote_version "`nuser_decision: no"
+        newState := "local_version: " local_version "`nremote_version: " remote_version "`nuser_decision: no"
         FileDelete(localStatePath)
         FileAppend(newState, localStatePath, "UTF-8-RAW")
         SetFileHidden(localStatePath)
@@ -171,13 +171,12 @@ enableHotstringsFromFile(hotstringsFilePath) {
 }
 
 make_gui(hotstringsFilePath) {
-    global version
     
     height := 400
 
     goo := Gui("+Resize", "h" height)
     goo.BackColor := 0xE0E0E0
-    goo.Title := "Notación Matemática v" version
+    goo.Title := "Notación Matemática"
     goo.separacionEntreColumnas := goo.separacionEntreCheckboxes := 0
     separacionEntreColumnas := 20
     separacionEntreCheckboxes := 20
