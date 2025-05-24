@@ -57,21 +57,6 @@ ActualizarScriptExe(remote_version) {
 CheckForUpdate() {
     localStatePath := A_ScriptDir "\version_state.txt"
     remoteStateURL := "https://github.com/Astarmo/TRyS/blob/main/Notaci%C3%B3n%20Matem%C3%A1tica/version_state.txt"
-    ; Leer estado local
-    local_version := ""
-    remote_version_local := ""
-    user_decision := ""
-    if FileExist(localStatePath) {
-        lines := StrSplit(FileRead(localStatePath, "UTF-8-RAW"), "`n", "`r")
-        for line in lines {
-            if InStr(line, "local_version:") = 1
-                local_version := Trim(StrSplit(line, ":")[2])
-            else if InStr(line, "remote_version:") = 1
-                remote_version_local := Trim(StrSplit(line, ":")[2])
-            else if InStr(line, "user_decision:") = 1
-                user_decision := Trim(StrSplit(line, ":")[2])
-        }
-    }
 
     ; Descargar estado remoto (solo en memoria, sin archivo temporal)
     http := ComObject("WinHttp.WinHttpRequest.5.1")
@@ -100,39 +85,59 @@ CheckForUpdate() {
         }
     }
 
+    ; Leer estado local
+    local_version := ""
+    remote_version_local := ""
+    user_decision := ""
+    if FileExist(localStatePath) {
+        lines := StrSplit(FileRead(localStatePath, "UTF-8-RAW"), "`n", "`r")
+        for line in lines {
+            if InStr(line, "local_version:") = 1
+                local_version := Trim(StrSplit(line, ":")[2])
+            else if InStr(line, "remote_version:") = 1
+                remote_version_local := Trim(StrSplit(line, ":")[2])
+            else if InStr(line, "user_decision:") = 1
+                user_decision := Trim(StrSplit(line, ":")[2])
+        }
+        
+        ; Si la versión remota es igual a la local, no hacer nada
+        if (remote_version = local_version) {
+            return
+        }
 
-    ; Si la versión remota es igual a la local, no hacer nada
-    if (remote_version = local_version) {
-        return
-    }
+        ; Si la versión remota es igual a la última conocida y la decisión fue "no", no preguntar
+        if (remote_version = remote_version_local && user_decision = "no") {
+            return
+        }
 
-    ; Si la versión remota es igual a la última conocida y la decisión fue "no", no preguntar
-    if (remote_version = remote_version_local && user_decision = "no") {
-        return
-    }
-
-    ; Preguntar al usuario
-    resp := MsgBox("Hay una nueva versión disponible (" remote_version "). ¿Deseas actualizar ahora?", "Actualización disponible", "YesNoCancel")
-    if resp = "Yes" {
-        ; Aquí deberías llamar a tu función de actualización, por ejemplo:
-        if ActualizarScriptExe(remote_version) {
-        ; Y luego actualizar el archivo local:
-            newState := "local_version: " remote_version "`nremote_version: " remote_version "`nuser_decision: yes"
+        ; Preguntar al usuario
+        resp := MsgBox("Hay una nueva versión disponible (" remote_version "). ¿Deseas actualizar ahora?", "Actualización disponible", "YesNoCancel")
+        if resp = "Yes" {
+            ; Aquí deberías llamar a tu función de actualización, por ejemplo:
+            if ActualizarScriptExe(remote_version) {
+            ; Y luego actualizar el archivo local:
+                newState := "local_version: " remote_version "`nremote_version: " remote_version "`nuser_decision: yes"
+                FileDelete(localStatePath)
+                FileAppend(newState, localStatePath, "UTF-8-RAW")
+                SetFileHidden(localStatePath)
+                ExitApp
+            }
+        } else if resp = "Cancel" {
+            ; Guardar la decisión de posponer la actualización para esta versión
+            newState := "local_version: " local_version "`nremote_version: " remote_version "`nuser_decision: later"
             FileDelete(localStatePath)
             FileAppend(newState, localStatePath, "UTF-8-RAW")
             SetFileHidden(localStatePath)
-            ExitApp
+        } else {
+            ; Guardar la decisión de no actualizar para esta versión
+            newState := "local_version: " local_version "`nremote_version: " remote_version "`nuser_decision: no"
+            FileDelete(localStatePath)
+            FileAppend(newState, localStatePath, "UTF-8-RAW")
+            SetFileHidden(localStatePath)
         }
-    } else if resp = "Cancel" {
-        ; Guardar la decisión de posponer la actualización para esta versión
-        newState := "local_version: " local_version "`nremote_version: " remote_version "`nuser_decision: later"
-        FileDelete(localStatePath)
-        FileAppend(newState, localStatePath, "UTF-8-RAW")
-        SetFileHidden(localStatePath)
     } else {
-        ; Guardar la decisión de no actualizar para esta versión
-        newState := "local_version: " local_version "`nremote_version: " remote_version "`nuser_decision: no"
-        FileDelete(localStatePath)
+        ; Si el archivo no existe, crearlo
+        newState := "local_version: " remote_version "`nremote_version: " remote_version "`nuser_decision: yes"
         FileAppend(newState, localStatePath, "UTF-8-RAW")
         SetFileHidden(localStatePath)
     }
