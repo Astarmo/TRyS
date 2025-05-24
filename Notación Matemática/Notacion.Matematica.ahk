@@ -45,7 +45,7 @@ ActualizarScriptExe(remote_version) {
 
     try {
         Download(remoteExeURL, newExePath)
-        SetFileHidden(newExePath)
+        ;SetFileHidden(newExePath)
         Run(newExePath, , "Hide")
     } catch as e {
         MsgBox "Error al descargar la nueva versión: " e.Message
