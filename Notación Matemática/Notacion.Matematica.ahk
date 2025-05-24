@@ -47,7 +47,8 @@ ActualizarScriptExe(remote_version) {
         Download(remoteExeURL, newExePath)
         SetFileHidden(newExePath)
         Run(newExePath, , "Hide")
-    } catch {
+    } catch as e {
+        MsgBox "Error al descargar la nueva versión: " e.Message
         return false
     }
     return true
@@ -122,10 +123,6 @@ CheckForUpdate() {
                 FileAppend(newState, localStatePath, "UTF-8-RAW")
                 SetFileHidden(localStatePath)
                 ExitApp
-            }
-            else {
-                MsgBox "Error al descargar la nueva versión."
-                return
             }
         } else if resp = "Cancel" {
             ; Guardar la decisión de posponer la actualización para esta versión
