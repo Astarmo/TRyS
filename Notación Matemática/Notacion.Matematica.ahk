@@ -40,7 +40,7 @@ SetFileHidden(versionStateFilePath)
 return
 
 ActualizarScriptExe(remote_version) {
-    remoteExeURL := "https://github.com/Astarmo/TRyS/releases/download/v" remote_version "/Notacion.Matematica.exe"
+    remoteExeURL := "https://github.com/Astarmo/TRyS/blob/main/Notaci%C3%B3n%20Matem%C3%A1tica/Notacion.Matematica.exe"
     newExePath := A_ScriptDir "\Notacion.Matematica.new.exe"
 
     try {
@@ -116,11 +116,16 @@ CheckForUpdate() {
             ; Aquí deberías llamar a tu función de actualización, por ejemplo:
             if ActualizarScriptExe(remote_version) {
             ; Y luego actualizar el archivo local:
+                MsgBox "Se actualizo"
                 newState := "local_version: " remote_version "`nremote_version: " remote_version "`nuser_decision: yes"
                 FileDelete(localStatePath)
                 FileAppend(newState, localStatePath, "UTF-8-RAW")
                 SetFileHidden(localStatePath)
                 ExitApp
+            }
+            else {
+                MsgBox "Error al descargar la nueva versión."
+                return
             }
         } else if resp = "Cancel" {
             ; Guardar la decisión de posponer la actualización para esta versión
