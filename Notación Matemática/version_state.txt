@@ -1,3 +1,0 @@
-local_version: 1.0.0
-remote_version: 1.0.0
-user_decision: later
